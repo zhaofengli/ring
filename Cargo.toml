@@ -272,6 +272,9 @@ lazy_static = "0.2.1"
 gcc = "0.3"
 rayon = "0.6"
 
+[dev-dependencies]
+base64 = "0.4"
+
 [features]
 # These features are documented in the top-level module's documentation.
 default = ["use_heap", "dev_urandom_fallback"]

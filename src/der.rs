@@ -16,8 +16,8 @@
 //!
 //! This module contains the foundational parts of an ASN.1 DER parser.
 
-use untrusted;
 use error;
+use untrusted;
 
 pub const CONSTRUCTED: u8 = 1 << 5;
 pub const CONTEXT_SPECIFIC: u8 = 2 << 6;
