@@ -126,6 +126,17 @@ use std::string::String;
 use std::vec::Vec;
 use std::io::BufRead;
 
+/// Like `assert_eq!(expected, result.unwrap_err())`, but `assert_is_err()`
+/// doesn't require `R: std::fmt::Debug`
+pub fn assert_is_err<R, E>(expected: E, result: Result<R, E>)
+                           where E: std::cmp::PartialEq + std::fmt::Debug {
+    assert!(result.is_err());
+    if let Err(actual) = result {
+        assert_eq!(expected, actual);
+    }
+}
+
+
 /// A test case. A test case consists of a set of named attributes. Every
 /// attribute in the test case must be consumed exactly once; this helps catch
 /// typos and omissions.

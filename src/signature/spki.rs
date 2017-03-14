@@ -12,8 +12,7 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-use der;
-use signature;
+use {der, error, signature};
 use untrusted;
 
 /// An error that occurs while parsing an SPKI public key.
@@ -28,17 +27,28 @@ pub enum ParseSPKIError {
     UnsupportedSignatureAlgorithmForPublicKey,
 }
 
+/// A public key and its type.
+pub struct SubjectPublicKeyInfo<'a> {
+    /// The value to pass to `ring::signature::verify()` as the `algorithm`
+    /// parameter.
+    pub algorithm: &'static super::VerificationAlgorithm,
+
+    /// The value to pass to `ring::signature::verify()` as the `public_key`
+    /// parameter.
+    pub subject_public_key: untrusted::Input<'a>,
+}
+
 /// Parse a public key in the DER-encoded ASN.1 `SubjectPublicKeyInfo`
-/// format described in [RFC 5280 Section 4.1], which is a sequence of an
-/// `AlgorithmIdentifier` and the key value.
+/// format described in [RFC 5280 Section 4.1].
 ///
 /// If the `AlgorithmIdentifier` in the SPKI does not match the provided
 /// `signature_alg`, or if the DER encoding is invalid, an error will be
 /// returned.
 ///
-/// If the function returns successfully, the `key_value` field in the
-/// resulting `SubjectPublicKeyInfo` struct is suitable for use with
-/// `signature::verify()`.
+/// If the function returns successfully, the result's `algorithm` field must
+/// be used as `signature::verify()`'s `algorithm` parameter, and its
+/// `subject_public_key` field must be used as `signature::verify()`'s
+/// `public_key` parameter.
 ///
 /// A common situation where this encoding is encountered is when using public
 /// keys exported by OpenSSL. If you export an RSA or ECDSA public key from a
@@ -46,48 +56,51 @@ pub enum ParseSPKIError {
 /// `SubjectPublicKeyInfo`.
 ///
 /// [RFC 5280 Section 4.1]: https://tools.ietf.org/html/rfc5280#section-4.1
-pub fn parse_spki<'a>(signature_alg: &Algorithm, public_key_spki: untrusted::Input<'a>)
+pub fn parse_spki<'a>(signature_alg: &Algorithm, spki: untrusted::Input<'a>)
         -> Result<SubjectPublicKeyInfo<'a>, ParseSPKIError> {
-    let unwrapped_spki_der = try!(public_key_spki.read_all(ParseSPKIError::BadDER, |input| {
-        der::expect_tag_and_get_value(input, der::Tag::Sequence)
-            .map_err(|_| ParseSPKIError::BadDER)
-    }));
+    let encoded_spki = try!(spki.read_all(error::Unspecified, |input| {
+        der::nested(input, der::Tag::Sequence, error::Unspecified,
+                    parse_spki_value)
+    }).map_err(|_| ParseSPKIError::BadDER));
 
-    let spki = try!(parse_spki_value(unwrapped_spki_der));
+    subject_public_key_info(signature_alg, &encoded_spki)
+        .map_err(|_| ParseSPKIError::UnsupportedSignatureAlgorithmForPublicKey)
+}
+
+// XXX: This is used by webpki. TODO: Switch webpki to use `parse_spki()`.
+#[doc(hidden)]
+pub struct EncodedSubjectPublicKeyInfo<'a> {
+    algorithm: untrusted::Input<'a>,
+    subject_public_key: untrusted::Input<'a>,
+}
+
+// XXX: This is used by webpki. TODO: Switch webpki to use `parse_spki()`.
+#[doc(hidden)]
+pub fn parse_spki_value<'a>(input: &mut untrusted::Reader<'a>)
+        -> Result<EncodedSubjectPublicKeyInfo<'a>, error::Unspecified> {
+    let algorithm =
+        try!(der::expect_tag_and_get_value(input, der::Tag::Sequence));
+    let subject_public_key = try!(der::bit_string_with_no_unused_bits(input));
+    Ok(EncodedSubjectPublicKeyInfo {
+        algorithm: algorithm,
+        subject_public_key: subject_public_key,
+    })
+}
+
+// XXX: This is used by webpki. TODO: Switch webpki to use `parse_spki()`.
+#[doc(hidden)]
+pub fn subject_public_key_info<'a>(
+        signature_alg: &Algorithm,
+        encoded_spki: &EncodedSubjectPublicKeyInfo<'a>)
+        -> Result<SubjectPublicKeyInfo<'a>, error::Unspecified> {
     if !signature_alg.public_key_alg_id
-        .matches_algorithm_id_value(spki.algorithm_id_value) {
-        return Err(ParseSPKIError::UnsupportedSignatureAlgorithmForPublicKey);
+            .matches_algorithm_id_value(encoded_spki.algorithm) {
+        return Err(error::Unspecified)
     }
 
-    Ok(spki)
-}
-
-/// Represents the contents of `SubjectPublicKeyInfo` described in
-/// RFC 5280 Section 4.1: https://tools.ietf.org/html/rfc5280#section-4.1
-#[derive(Debug)]
-pub struct SubjectPublicKeyInfo<'a> {
-    /// The algorithm id ASN.1.
-    pub algorithm_id_value: untrusted::Input<'a>,
-    /// The key ASN.1 bit string.
-    pub key_value: untrusted::Input<'a>,
-}
-
-// Parse the public key into an algorithm OID, an optional curve OID, and the
-// key value. The caller needs to check whether these match the
-// `PublicKeyAlgorithm` for the `SignatureAlgorithm` that is matched when
-// parsing the signature.
-fn parse_spki_value(input: untrusted::Input)
-                    -> Result<SubjectPublicKeyInfo, ParseSPKIError> {
-    input.read_all(ParseSPKIError::BadDER, |input| {
-        let algorithm_id_value =
-            try!(der::expect_tag_and_get_value(input, der::Tag::Sequence)
-                .map_err(|_| ParseSPKIError::BadDER));
-        let key_value = try!(der::bit_string_with_no_unused_bits(input)
-            .map_err(|_| ParseSPKIError::BadDER));
-        Ok(SubjectPublicKeyInfo {
-            algorithm_id_value: algorithm_id_value,
-            key_value: key_value,
-        })
+    Ok(SubjectPublicKeyInfo {
+        algorithm: signature_alg.verification_alg,
+        subject_public_key: encoded_spki.subject_public_key,
     })
 }
 
@@ -199,4 +212,3 @@ const ECDSA_P384: AlgorithmIdentifier = AlgorithmIdentifier {
 const RSA_ENCRYPTION: AlgorithmIdentifier = AlgorithmIdentifier {
     asn1_id_value: include_bytes!("data/alg-rsa-encryption.der"),
 };
-
