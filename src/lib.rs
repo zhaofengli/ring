@@ -162,6 +162,7 @@ mod rsa;
 #[doc(hidden)]
 pub use rsa::GFp_rand_mod;
 
+#[path = "signature/signature.rs"]
 pub mod signature;
 
 #[cfg(any(feature = "use_heap", test))]
