@@ -326,7 +326,7 @@ pub(crate) fn verify_rsa_(
     // Verify the padded message is correct.
     let m_hash = digest::digest(params.padding_alg.digest_alg(), msg.as_slice_less_safe());
     untrusted::Input::from(decoded).read_all(error::Unspecified, |m| {
-        params.padding_alg.verify(&m_hash, m, n_bits)
+        params.padding_alg.verify(m_hash, m, n_bits)
     })
 }
 
