@@ -61,6 +61,8 @@ enum N {}
 
 unsafe impl bigint::PublicModulus for N {}
 
+pub mod public;
+
 pub(crate) mod verification;
 
 pub(crate) mod signing;
