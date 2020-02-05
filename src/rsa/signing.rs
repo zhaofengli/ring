@@ -211,8 +211,7 @@ impl RsaKeyPair {
         Self::from_components(&components)
     }
 
-    /// TODO: docs
-    pub fn from_components(
+    fn from_components(
         &Components {
             public_key,
             d,
