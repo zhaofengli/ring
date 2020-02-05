@@ -116,7 +116,7 @@ pub mod pkcs8;
 pub mod rand;
 
 #[cfg(feature = "alloc")]
-mod rsa;
+pub mod rsa;
 
 pub mod signature;
 
