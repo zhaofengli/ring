@@ -26,6 +26,7 @@ use crate::{
     pkcs8, rand, signature,
 };
 use alloc::boxed::Box;
+use core::convert::TryFrom;
 use untrusted;
 
 /// An RSA key pair, used for signing.
@@ -208,10 +209,10 @@ impl RsaKeyPair {
             qInv,
         };
 
-        Self::from_components(&components)
+        Self::try_from(&components)
     }
 
-    fn from_components(
+    fn try_from_(
         &Components {
             public_key,
             d,
@@ -418,6 +419,40 @@ impl RsaKeyPair {
     #[inline]
     pub fn public_modulus_len(&self) -> usize {
         self.public().n().len()
+    }
+}
+
+impl<Public, Private> TryFrom<&Components<Public, Private>> for RsaKeyPair
+where
+    Public: AsRef<[u8]>,
+    Private: AsRef<[u8]>,
+{
+    type Error = KeyRejected;
+
+    fn try_from(
+        Components {
+            public_key,
+            d,
+            p,
+            q,
+            dP,
+            dQ,
+            qInv,
+        }: &Components<Public, Private>,
+    ) -> Result<Self, Self::Error> {
+        let components = Components {
+            public_key: super::public::Components {
+                n: public_key.n.as_ref(),
+                e: public_key.e.as_ref(),
+            },
+            d: d.as_ref(),
+            p: p.as_ref(),
+            q: q.as_ref(),
+            dP: dP.as_ref(),
+            dQ: dQ.as_ref(),
+            qInv: qInv.as_ref(),
+        };
+        Self::try_from_(&components)
     }
 }
 
