@@ -219,8 +219,7 @@ rsa_params!(
 // testing `verify_rsa` directly, but the testing work for RSA PKCS#1
 // verification was done during the implementation of
 // `signature::VerificationAlgorithm`, before `verify_rsa` was factored out).
-#[derive(Debug)]
-pub struct RsaPublicKeyComponents<B: AsRef<[u8]> + core::fmt::Debug> {
+pub struct RsaPublicKeyComponents<B: AsRef<[u8]>> {
     /// The public modulus, encoded in big-endian bytes without leading zeros.
     pub n: B,
 
@@ -228,11 +227,11 @@ pub struct RsaPublicKeyComponents<B: AsRef<[u8]> + core::fmt::Debug> {
     pub e: B,
 }
 
-impl<B: Copy> Copy for RsaPublicKeyComponents<B> where B: AsRef<[u8]> + core::fmt::Debug {}
+impl<B: Copy> Copy for RsaPublicKeyComponents<B> where B: AsRef<[u8]> {}
 
 impl<B: Clone> Clone for RsaPublicKeyComponents<B>
 where
-    B: AsRef<[u8]> + core::fmt::Debug,
+    B: AsRef<[u8]>,
 {
     fn clone(&self) -> Self {
         Self {
@@ -242,9 +241,21 @@ where
     }
 }
 
-impl<B> RsaPublicKeyComponents<B>
+impl<B> core::fmt::Debug for RsaPublicKeyComponents<B>
 where
     B: AsRef<[u8]> + core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        f.debug_struct("RsaPublicKeyComponents")
+            .field("n", &self.n)
+            .field("e", &self.e)
+            .finish()
+    }
+}
+
+impl<B> RsaPublicKeyComponents<B>
+where
+    B: AsRef<[u8]>,
 {
     /// Verifies that `signature` is a valid signature of `message` using `self`
     /// as the public key. `params` determine what algorithm parameters
