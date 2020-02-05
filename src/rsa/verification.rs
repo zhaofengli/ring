@@ -139,7 +139,7 @@ rsa_params!(
 rsa_params!(
     RSA_PKCS1_1024_8192_SHA256_FOR_LEGACY_USE_ONLY,
     1024,
-    &super::RSA_PKCS1_SHA256,
+    &super::padding::RSA_PKCS1_SHA256,
     "Verification of signatures using RSA keys of 1024-8192 bits,
              PKCS#1.5 padding, and SHA-256.\n\nSee \"`RSA_PKCS1_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
@@ -147,7 +147,7 @@ rsa_params!(
 rsa_params!(
     RSA_PKCS1_2048_8192_SHA256,
     2048,
-    &super::RSA_PKCS1_SHA256,
+    &super::padding::RSA_PKCS1_SHA256,
     "Verification of signatures using RSA keys of 2048-8192 bits,
              PKCS#1.5 padding, and SHA-256.\n\nSee \"`RSA_PKCS1_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
@@ -155,7 +155,7 @@ rsa_params!(
 rsa_params!(
     RSA_PKCS1_2048_8192_SHA384,
     2048,
-    &super::RSA_PKCS1_SHA384,
+    &super::padding::RSA_PKCS1_SHA384,
     "Verification of signatures using RSA keys of 2048-8192 bits,
              PKCS#1.5 padding, and SHA-384.\n\nSee \"`RSA_PKCS1_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
@@ -163,7 +163,7 @@ rsa_params!(
 rsa_params!(
     RSA_PKCS1_2048_8192_SHA512,
     2048,
-    &super::RSA_PKCS1_SHA512,
+    &super::padding::RSA_PKCS1_SHA512,
     "Verification of signatures using RSA keys of 2048-8192 bits,
              PKCS#1.5 padding, and SHA-512.\n\nSee \"`RSA_PKCS1_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
@@ -171,7 +171,7 @@ rsa_params!(
 rsa_params!(
     RSA_PKCS1_3072_8192_SHA384,
     3072,
-    &super::RSA_PKCS1_SHA384,
+    &super::padding::RSA_PKCS1_SHA384,
     "Verification of signatures using RSA keys of 3072-8192 bits,
              PKCS#1.5 padding, and SHA-384.\n\nSee \"`RSA_PKCS1_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
@@ -180,7 +180,7 @@ rsa_params!(
 rsa_params!(
     RSA_PSS_2048_8192_SHA256,
     2048,
-    &super::RSA_PSS_SHA256,
+    &super::padding::RSA_PSS_SHA256,
     "Verification of signatures using RSA keys of 2048-8192 bits,
              PSS padding, and SHA-256.\n\nSee \"`RSA_PSS_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
@@ -188,7 +188,7 @@ rsa_params!(
 rsa_params!(
     RSA_PSS_2048_8192_SHA384,
     2048,
-    &super::RSA_PSS_SHA384,
+    &super::padding::RSA_PSS_SHA384,
     "Verification of signatures using RSA keys of 2048-8192 bits,
              PSS padding, and SHA-384.\n\nSee \"`RSA_PSS_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
@@ -196,7 +196,7 @@ rsa_params!(
 rsa_params!(
     RSA_PSS_2048_8192_SHA512,
     2048,
-    &super::RSA_PSS_SHA512,
+    &super::padding::RSA_PSS_SHA512,
     "Verification of signatures using RSA keys of 2048-8192 bits,
              PSS padding, and SHA-512.\n\nSee \"`RSA_PSS_*` Details\" in
              `ring::signature`'s module-level documentation for more details."
