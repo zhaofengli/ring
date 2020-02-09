@@ -12,7 +12,7 @@
 // OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-use super::{padding::RsaEncoding, public, N};
+use super::{padding::RsaEncoding, keypair::Components, public, N};
 
 /// RSA PKCS#1 1.5 signatures.
 use crate::{
@@ -181,21 +181,54 @@ impl RsaKeyPair {
             return Err(KeyRejected::version_not_supported());
         }
 
-        fn positive_integer<'a>(
+        fn nonnegative_integer<'a>(
             input: &mut untrusted::Reader<'a>,
-        ) -> Result<io::Positive<'a>, KeyRejected> {
-            der::positive_integer(input)
+        ) -> Result<&'a [u8], KeyRejected> {
+            der::nonnegative_integer(input, 0)
+                .map(|input| input.as_slice_less_safe())
                 .map_err(|error::Unspecified| KeyRejected::invalid_encoding())
         }
 
-        let n = positive_integer(input)?;
-        let e = positive_integer(input)?;
-        let d = positive_integer(input)?.big_endian_without_leading_zero_as_input();
-        let p = positive_integer(input)?.big_endian_without_leading_zero_as_input();
-        let q = positive_integer(input)?.big_endian_without_leading_zero_as_input();
-        let dP = positive_integer(input)?.big_endian_without_leading_zero_as_input();
-        let dQ = positive_integer(input)?.big_endian_without_leading_zero_as_input();
-        let qInv = positive_integer(input)?.big_endian_without_leading_zero_as_input();
+        let n = nonnegative_integer(input)?;
+        let e = nonnegative_integer(input)?;
+        let d = nonnegative_integer(input)?;
+        let p = nonnegative_integer(input)?;
+        let q = nonnegative_integer(input)?;
+        let dP = nonnegative_integer(input)?;
+        let dQ = nonnegative_integer(input)?;
+        let qInv = nonnegative_integer(input)?;
+
+        let components = Components {
+            public_key: super::public::Components { n, e },
+            d,
+            p,
+            q,
+            dP,
+            dQ,
+            qInv,
+        };
+
+        Self::from_components(&components)
+    }
+
+    /// TODO: docs
+    pub fn from_components(
+        &Components {
+            public_key,
+            d,
+            p,
+            q,
+            dP,
+            dQ,
+            qInv,
+        }: &Components<&[u8]>,
+    ) -> Result<Self, KeyRejected> {
+        let d = untrusted::Input::from(d);
+        let p = untrusted::Input::from(p);
+        let q = untrusted::Input::from(q);
+        let dP = untrusted::Input::from(dP);
+        let dQ = untrusted::Input::from(dQ);
+        let qInv = untrusted::Input::from(qInv);
 
         let (p, p_bits) = bigint::Nonnegative::from_be_bytes_with_bit_length(p)
             .map_err(|error::Unspecified| KeyRejected::invalid_encoding())?;
@@ -232,9 +265,11 @@ impl RsaKeyPair {
         // Also, this limit might help with memory management decisions later.
 
         // Step 1.c. We validate e >= 65537.
+        let n = untrusted::Input::from(public_key.n);
+        let e = untrusted::Input::from(public_key.e);
         let public_key = public::Key::from_modulus_and_exponent(
-            n.big_endian_without_leading_zero_as_input(),
-            e.big_endian_without_leading_zero_as_input(),
+            n,
+            e,
             bits::BitLength::from_usize_bits(2048),
             super::PRIVATE_KEY_PUBLIC_MODULUS_MAX_BITS,
             65537,
@@ -264,6 +299,8 @@ impl RsaKeyPair {
             return Err(KeyRejected::inconsistent_components());
         }
 
+        let n = &public_key.n().value;
+
         // TODO: Step 5.d: Verify GCD(p - 1, e) == 1.
 
         // Steps 5.e and 5.f are omitted as explained above.
@@ -280,14 +317,12 @@ impl RsaKeyPair {
         // TODO: Step 5.h: Verify GCD(p - 1, e) == 1.
 
         let q_mod_n_decoded = q
-            .to_elem(&public_key.n().value)
+            .to_elem(n)
             .map_err(|error::Unspecified| KeyRejected::inconsistent_components())?;
 
         // TODO: Step 5.i
         //
         // 3.b is unneeded since `n_bits` is derived here from `n`.
-
-        let n = &public_key.n().value;
 
         // 6.4.1.4.3 - Step 3.a (out of order).
         //

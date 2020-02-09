@@ -318,7 +318,7 @@ fn rsa_test_public_key_coverage() {
     }
 
     {
-        // Test `verification::Key`
+        // Test `public::Key`
         let public_key = key_pair.public();
 
         // Test `Clone`.
