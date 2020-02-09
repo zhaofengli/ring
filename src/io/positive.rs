@@ -20,7 +20,7 @@ pub struct Positive<'a>(untrusted::Input<'a>);
 
 impl<'a> Positive<'a> {
     #[inline]
-    pub(crate) fn new_non_empty_without_leading_zeros(input: untrusted::Input<'a>) -> Self {
+    pub(super) fn new_non_empty_without_leading_zeros(input: untrusted::Input<'a>) -> Self {
         debug_assert!(!input.is_empty());
         debug_assert!(input.len() == 1 || input.as_slice_less_safe()[0] != 0);
         Self(input)
