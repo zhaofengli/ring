@@ -207,6 +207,7 @@ include = [
     "src/rand.rs",
     "src/rsa/convert_nist_rsa_test_vectors.py",
     "src/rsa.rs",
+    "src/rsa/keypair.rs",
     "src/rsa/padding.rs",
     "src/rsa/random.rs",
     "src/rsa/rsa_pss_padding_tests.txt",

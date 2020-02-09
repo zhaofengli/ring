@@ -281,6 +281,7 @@ pub use crate::ec::{
 
 #[cfg(feature = "alloc")]
 pub use crate::rsa::{
+    keypair::signing::{RsaKeyPair, RsaSubjectPublicKey},
     padding::{
         RsaEncoding,
 
@@ -295,8 +296,6 @@ pub use crate::rsa::{
         RSA_PSS_SHA384,
         RSA_PSS_SHA512,
     },
-    signing::RsaKeyPair,
-    signing::RsaSubjectPublicKey,
     verification::{
         RsaPublicKeyComponents, RSA_PKCS1_1024_8192_SHA1_FOR_LEGACY_USE_ONLY,
         RSA_PKCS1_1024_8192_SHA256_FOR_LEGACY_USE_ONLY,
