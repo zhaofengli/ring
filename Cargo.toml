@@ -10,7 +10,7 @@ license-file = "LICENSE"
 name = "ring"
 readme = "doc/link-to-readme.md"
 repository = "https://github.com/briansmith/ring"
-version = "0.16.11"
+version = "0.17.0-alpha.1"
 
 # Prevent multiple versions of *ring* from being linked into the same program.
 links = "ring-asm"
@@ -215,7 +215,15 @@ include = [
     "src/rsa/convert_nist_rsa_test_vectors.py",
     "src/rsa.rs",
     "src/rsa/keypair.rs",
+    "src/rsa/keypair/components.rs",
+    "src/rsa/keypair/core.rs",
+    "src/rsa/keypair/oaep.rs",
+    "src/rsa/keypair/signing.rs",
     "src/rsa/padding.rs",
+    "src/rsa/public.rs",
+    "src/rsa/public/components.rs",
+    "src/rsa/public/key.rs",
+    "src/rsa/public/oaep.rs",
     "src/rsa/random.rs",
     "src/rsa/rsa_pss_padding_tests.txt",
     "src/rsa/signature_rsa_example_private_key.der",
