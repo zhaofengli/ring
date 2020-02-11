@@ -13,7 +13,7 @@
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 use super::PUBLIC_KEY_PUBLIC_MODULUS_MAX_LEN;
-use crate::{bits, digest, error, io::der};
+use crate::{bits, digest, error, io::der, polyfill};
 use untrusted;
 
 #[cfg(feature = "alloc")]
@@ -222,10 +222,6 @@ pub struct PSS {
 
 impl crate::sealed::Sealed for PSS {}
 
-// Maximum supported length of the salt in bytes.
-// In practice, this is constrained by the maximum digest length.
-const MAX_SALT_LEN: usize = digest::MAX_OUTPUT_LEN;
-
 impl Padding for PSS {
     fn digest_alg(&self) -> &'static digest::Algorithm {
         self.digest_alg
@@ -262,43 +258,41 @@ impl RsaEncoding for PSS {
 
         // Step 3 is done by `PSSMetrics::new()` above.
 
-        // Step 4.
-        let mut salt = [0u8; MAX_SALT_LEN];
-        let salt = &mut salt[..metrics.s_len];
-        rng.fill(salt)?;
-
-        // Step 5 and 6.
-        let h_hash = pss_digest(self.digest_alg, m_hash, salt);
-
-        // Re-order steps 7, 8, 9 and 10 so that we first output the db mask
-        // into `em`, and then XOR the value of db.
-
-        // Step 9. First output the mask into the out buffer.
-        let (mut masked_db, digest_terminator) = em.split_at_mut(metrics.db_len);
-        mgf1(self.digest_alg, h_hash.as_ref(), &mut masked_db)?;
-
         {
-            // Steps 7.
-            let masked_db = masked_db.into_iter();
-            // `PS` is all zero bytes, so skipping `ps_len` bytes is equivalent
-            // to XORing `PS` onto `db`.
-            let mut masked_db = masked_db.skip(metrics.ps_len);
+            let (db, digest_terminator) = em.split_at_mut(metrics.db_len);
+            let h;
+            {
+                let separator_pos = db.len() - 1 - metrics.s_len;
 
-            // Step 8.
-            *(masked_db.next().ok_or(error::Unspecified)?) ^= 0x01;
+                // Step 4.
+                let salt: &[u8] = {
+                    let salt = &mut db[(separator_pos + 1)..];
+                    rng.fill(salt)?; // salt
+                    salt
+                };
 
-            // Step 10.
-            for (masked_db_b, salt_b) in masked_db.zip(salt) {
-                *masked_db_b ^= *salt_b;
-            }
+                // Step 5 and 6.
+                h = pss_digest(self.digest_alg, m_hash, salt);
+
+                // Step 7.
+                polyfill::slice::fill(&mut db[..separator_pos], 0); // ps
+
+                // Step 8.
+                db[separator_pos] = 0x01;
+            };
+
+            // Steps 9 and 10.
+            mgf1(self.digest_alg, h.as_ref(), db)?;
+
+            // Step 11.
+            db[0] &= metrics.top_byte_mask;
+
+            // Step 12.
+            digest_terminator[..metrics.h_len].copy_from_slice(h.as_ref());
+            digest_terminator[metrics.h_len] = 0xbc;
         }
 
-        // Step 11.
-        masked_db[0] &= metrics.top_byte_mask;
-
         // Step 12.
-        digest_terminator[..metrics.h_len].copy_from_slice(h_hash.as_ref());
-        digest_terminator[metrics.h_len] = 0xbc;
 
         Ok(())
     }
@@ -463,8 +457,9 @@ fn mgf1(
         ctx.update(seed);
         ctx.update(&u32::to_be_bytes(i as u32));
         let digest = ctx.finish();
-        let mask_chunk_len = mask_chunk.len();
-        mask_chunk.copy_from_slice(&digest.as_ref()[..mask_chunk_len]);
+        for (m, &d) in mask_chunk.iter_mut().zip(digest.as_ref().iter()) {
+            *m ^= d;
+        }
     }
 
     Ok(())
