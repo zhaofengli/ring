@@ -53,19 +53,21 @@
  * (eay@cryptsoft.com).  This product includes software written by Tim
  * Hudson (tjh@cryptsoft.com). */
 
-int RSA_padding_check_PKCS1_OAEP_mgf1(uint8_t *out, size_t *out_len,
-                                      size_t max_out, const uint8_t *from,
-                                      size_t from_len, const uint8_t *param,
-                                      size_t param_len, const EVP_MD *md,
-                                      const EVP_MD *mgf1md) {
-  crypto_word_t bad = ~constant_time_is_zero_w(CRYPTO_memcmp(db, phash, mdlen));
-  bad |= ~constant_time_is_zero_w(from[0]);
+#include "../../internal.h"
 
-  crypto_word_t looking_for_one_byte = CONSTTIME_TRUE_W;
+#include <GFp/mem.h>
+
+int GFp_RSA_padding_check_oaep(size_t *out_len, uint8_t y, const uint8_t db[],
+                               size_t dblen, const uint8_t phash[],
+                               size_t mdlen) {
+  crypto_word bad = ~constant_time_is_zero_w(GFp_memcmp(db, phash, mdlen));
+  bad |= ~constant_time_is_zero_w(y);
+
+  crypto_word looking_for_one_byte = CONSTTIME_TRUE_W;
   size_t one_index = 0;
   for (size_t i = mdlen; i < dblen; i++) {
-    crypto_word_t equals1 = constant_time_eq_w(db[i], 1);
-    crypto_word_t equals0 = constant_time_eq_w(db[i], 0);
+    crypto_word equals1 = constant_time_eq_w(db[i], 1);
+    crypto_word equals0 = constant_time_eq_w(db[i], 0);
     one_index =
         constant_time_select_w(looking_for_one_byte & equals1, i, one_index);
     looking_for_one_byte =
