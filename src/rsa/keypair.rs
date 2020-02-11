@@ -1,7 +1,8 @@
 //! Low-level RSA key pair (private key) API.
 
-pub(crate) mod components;
-pub(crate) mod core;
+mod asn1;
+mod components;
+mod core;
 mod oaep;
 pub(crate) mod signing;
 
