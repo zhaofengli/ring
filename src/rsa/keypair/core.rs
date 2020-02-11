@@ -423,4 +423,16 @@ impl RsaKeyPair {
 
         Ok(())
     }
+
+    pub(super) fn rsa_private<R>(
+        &self,
+        input: &[u8],
+        f: impl FnOnce(&mut [u8]) -> Result<R, error::Unspecified>,
+    ) -> Result<R, error::Unspecified> {
+        let mut buffer = [0u8; PRIVATE_KEY_PUBLIC_MODULUS_MAX_BITS.as_usize_bytes_rounded_up()];
+        let buffer = buffer.get_mut(..input.len()).ok_or(error::Unspecified)?;
+        buffer.copy_from_slice(input);
+        self.rsa_private_in_place(buffer)?;
+        f(buffer)
+    }
 }

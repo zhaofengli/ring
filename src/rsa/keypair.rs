@@ -2,7 +2,7 @@
 
 pub(crate) mod components;
 pub(crate) mod core;
+mod oaep;
 pub(crate) mod signing;
 
-pub(in crate::rsa) use self::core::RsaKeyPair;
-pub use components::Components;
+pub use self::{components::Components, core::RsaKeyPair};

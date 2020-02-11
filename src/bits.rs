@@ -45,7 +45,7 @@ impl BitLength {
 
     #[cfg(feature = "alloc")]
     #[inline]
-    pub fn as_usize_bytes_rounded_up(&self) -> usize {
+    pub const fn as_usize_bytes_rounded_up(&self) -> usize {
         // Equivalent to (self.0 + 7) / 8, except with no potential for
         // overflow and without branches.
 

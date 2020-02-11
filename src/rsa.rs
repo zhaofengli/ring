@@ -59,6 +59,12 @@ enum N {}
 unsafe impl bigint::PublicModulus for N {}
 
 pub(crate) mod keypair;
-pub mod public;
+pub(crate) mod public;
 
 pub(crate) mod verification;
+
+pub use self::{
+    keypair::{Components as RsaKeyPairComponents, RsaKeyPair},
+    padding::{OaepEncoding, RSA_OAEP_SHA1_FOR_LEGACY_USE_ONLY, RSA_OAEP_SHA256},
+    public::{Components as RsaPublicKeyComponents, Key as RsaPublicKey},
+};
