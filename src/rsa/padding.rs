@@ -13,7 +13,8 @@
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 use super::PUBLIC_KEY_PUBLIC_MODULUS_MAX_LEN;
-use crate::{bits, digest, error, io::der, polyfill};
+use crate::{bits, bssl, c, digest, error, io::der, polyfill};
+use alloc::{boxed::Box, vec};
 use untrusted;
 
 #[cfg(feature = "alloc")]
@@ -512,6 +513,28 @@ rsa_pss_padding!(
                  documentation for more details."
 );
 
+/// RSA OAEP encoding parameters.
+#[derive(Debug, PartialEq, Eq)]
+pub struct OaepEncoding {
+    digest_alg: &'static digest::Algorithm,
+}
+
+macro_rules! rsa_oaep_padding {
+    ( $PADDING_ALGORITHM:ident, $digest_alg:expr, $doc_str:expr ) => {
+        #[doc=$doc_str]
+        pub static $PADDING_ALGORITHM: OaepEncoding = OaepEncoding {
+            digest_alg: $digest_alg,
+        };
+    };
+}
+
+rsa_oaep_padding!(
+    RSA_OAEP_SHA1_FOR_LEGACY_USE_ONLY,
+    &digest::SHA1_FOR_LEGACY_USE_ONLY,
+    "RSA OAEP using SHA-1."
+);
+rsa_oaep_padding!(RSA_OAEP_SHA256, &digest::SHA256, "RSA OAEP using SHA-256.");
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -595,4 +618,109 @@ mod test {
             },
         );
     }
+}
+
+pub(in crate::rsa) fn oaep_decode<'in_out>(
+    encoding: &'static OaepEncoding,
+    in_out: &'in_out mut [u8],
+    mod_bits: bits::BitLength,
+) -> Result<&'in_out [u8], error::Unspecified> {
+    const L: &[u8] = &[];
+    let h_len = encoding.digest_alg.output_len;
+    let k = mod_bits.as_usize_bytes_rounded_up();
+
+    // 1.a. is implicit given we don't support a non-empty `L`.
+
+    // 1.b
+    if in_out.len() != k {
+        return Err(error::Unspecified);
+    }
+
+    // 1.c
+    if k < (2 * h_len) + 2 {
+        return Err(error::Unspecified);
+    }
+
+    // 3.a.
+    let l_hash = digest::digest(&encoding.digest_alg, L); // TODO: precompute
+
+    // 3.b.
+    let (y, rest) = in_out.split_at_mut(1);
+    let y = y[0];
+    let (seed, db) = rest.split_at_mut(h_len);
+
+    // 3.c and 3.d
+    mgf1(&encoding.digest_alg, db, seed)?;
+
+    // 3.e. and 3.f.
+    mgf1(&encoding.digest_alg, seed, db)?;
+
+    extern "C" {
+        fn GFp_RSA_padding_check_oaep(
+            out_len: &mut c::size_t,
+            y: u8,
+            db: *const u8,
+            db_len: c::size_t,
+            phash: *const u8,
+            mdlen: c::size_t,
+        ) -> bssl::Result;
+    }
+    let mut plaintext_len: c::size_t = 0;
+    Result::from(unsafe {
+        GFp_RSA_padding_check_oaep(
+            &mut plaintext_len,
+            y,
+            db.as_ptr(),
+            db.len(),
+            l_hash.as_ref().as_ptr(),
+            l_hash.as_ref().len(),
+        )
+    })?;
+    let plaintext_start = db.len() - plaintext_len;
+
+    Ok(&db[plaintext_start..]) // TODo
+}
+
+pub fn oaep_encode<'in_out>(
+    encoding: &'static OaepEncoding,
+    plaintext: &[u8],
+    mod_bits: bits::BitLength,
+    rng: &dyn rand::SecureRandom,
+) -> Result<Box<[u8]>, error::Unspecified> {
+    const L: &[u8] = &[];
+    let k = mod_bits.as_usize_bytes_rounded_up();
+    let h_len = encoding.digest_alg.output_len;
+
+    // 1.a is implicitly done since `L` is fixed.
+
+    // 1.b
+    if plaintext.len() > k - (2 * h_len) - 2 {
+        return Err(error::Unspecified);
+    }
+
+    let mut em = vec![0u8; k].into_boxed_slice();
+    {
+        let (zero, rest) = em.split_at_mut(1);
+        debug_assert_eq!(zero, &[0]);
+        let (seed, db) = rest.split_at_mut(h_len);
+        let (l_hash, rest) = db.split_at_mut(h_len);
+        l_hash.copy_from_slice(digest::digest(&encoding.digest_alg, L).as_ref());
+        let m_index = rest.len() - plaintext.len();
+        let (ps, rest) = rest.split_at_mut(m_index - 1);
+        debug_assert!(ps.iter().all(|&b| b == 0));
+
+        rest[0] = 0x01;
+        rest[1..].copy_from_slice(plaintext);
+
+        // 2.d
+        rng.fill(seed)?;
+
+        // 2.e and 2.f
+        mgf1(&encoding.digest_alg, seed, db)?;
+
+        // 2.g and 2.h
+        mgf1(&encoding.digest_alg, db, seed)?;
+    }
+
+    Ok(em.into())
 }
