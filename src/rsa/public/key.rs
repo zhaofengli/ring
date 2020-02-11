@@ -6,7 +6,8 @@ use crate::{
 };
 use alloc::boxed::Box;
 
-#[derive(Debug)]
+/// An RSA Public Key.
+#[derive(Clone, Debug)]
 pub struct Key {
     n: PublicModulus,
     e: PublicExponent,
@@ -42,11 +43,13 @@ impl Key {
         Ok(Self { n, e })
     }
 
+    /// The public modulus.
     #[inline]
     pub fn n(&self) -> &PublicModulus {
         &self.n
     }
 
+    /// The public exponent.
     #[inline]
     pub fn e(&self) -> &PublicExponent {
         &self.e
@@ -102,6 +105,7 @@ fn fill_be_bytes_n(
     out
 }
 
+#[derive(Clone)]
 pub struct PublicModulus {
     pub(in crate::rsa) value: bigint::Modulus<N>,
     bits: bits::BitLength,
@@ -162,6 +166,7 @@ impl PublicModulus {
     }
 }
 
+#[derive(Clone)]
 pub struct PublicExponent(pub(in crate::rsa) bigint::PublicExponent);
 
 impl PublicExponent {
