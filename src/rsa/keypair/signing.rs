@@ -19,7 +19,7 @@ use crate::{
     digest,
     error::{self, KeyRejected},
     io::{self, der, der_writer},
-    pkcs8, rand, signature,
+    rand, signature,
 };
 use alloc::boxed::Box;
 use core::convert::TryFrom;
@@ -135,13 +135,7 @@ impl RsaKeyPair {
     /// [RFC 5958]:
     ///     https://tools.ietf.org/html/rfc5958
     pub fn from_pkcs8(pkcs8: &[u8]) -> Result<Self, KeyRejected> {
-        const RSA_ENCRYPTION: &[u8] = include_bytes!("../../data/alg-rsa-encryption.der");
-        let (der, _) = pkcs8::unwrap_key_(
-            untrusted::Input::from(&RSA_ENCRYPTION),
-            pkcs8::Version::V1Only,
-            untrusted::Input::from(pkcs8),
-        )?;
-        Self::from_der(der.as_slice_less_safe())
+        keypair::RsaKeyPair::from_pkcs8(pkcs8).map(From::from)
     }
 
     /// Parses an RSA private key that is not inside a PKCS#8 wrapper.
@@ -160,51 +154,7 @@ impl RsaKeyPair {
     /// [NIST SP-800-56B rev. 1]:
     ///     http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-56Br1.pdf
     pub fn from_der(input: &[u8]) -> Result<Self, KeyRejected> {
-        untrusted::Input::from(input).read_all(KeyRejected::invalid_encoding(), |input| {
-            der::nested(
-                input,
-                der::Tag::Sequence,
-                error::KeyRejected::invalid_encoding(),
-                Self::from_der_reader,
-            )
-        })
-    }
-
-    fn from_der_reader(input: &mut untrusted::Reader) -> Result<Self, KeyRejected> {
-        let version = der::small_nonnegative_integer(input)
-            .map_err(|error::Unspecified| KeyRejected::invalid_encoding())?;
-        if version != 0 {
-            return Err(KeyRejected::version_not_supported());
-        }
-
-        fn nonnegative_integer<'a>(
-            input: &mut untrusted::Reader<'a>,
-        ) -> Result<&'a [u8], KeyRejected> {
-            der::nonnegative_integer(input, 0)
-                .map(|input| input.as_slice_less_safe())
-                .map_err(|error::Unspecified| KeyRejected::invalid_encoding())
-        }
-
-        let n = nonnegative_integer(input)?;
-        let e = nonnegative_integer(input)?;
-        let d = nonnegative_integer(input)?;
-        let p = nonnegative_integer(input)?;
-        let q = nonnegative_integer(input)?;
-        let dP = nonnegative_integer(input)?;
-        let dQ = nonnegative_integer(input)?;
-        let qInv = nonnegative_integer(input)?;
-
-        let components = keypair::Components {
-            public_key: public::Components { n, e },
-            d,
-            p,
-            q,
-            dP,
-            dQ,
-            qInv,
-        };
-
-        Self::try_from(&components)
+        keypair::RsaKeyPair::from_der(input).map(From::from)
     }
 
     /// Returns a reference to the public key.
@@ -222,6 +172,13 @@ impl RsaKeyPair {
     }
 }
 
+impl From<keypair::RsaKeyPair> for RsaKeyPair {
+    fn from(inner: keypair::RsaKeyPair) -> Self {
+        let public_key = RsaSubjectPublicKey::from(inner.public());
+        Self { inner, public_key }
+    }
+}
+
 impl<Public, Private> TryFrom<&keypair::Components<Public, Private>> for RsaKeyPair
 where
     Public: AsRef<[u8]>,
@@ -230,10 +187,7 @@ where
     type Error = KeyRejected;
 
     fn try_from(components: &keypair::Components<Public, Private>) -> Result<Self, Self::Error> {
-        let inner = keypair::RsaKeyPair::try_from(components)?;
-        let public_key = RsaSubjectPublicKey::from(inner.public());
-
-        Ok(Self { inner, public_key })
+        keypair::RsaKeyPair::try_from(components).map(From::from)
     }
 }
 
