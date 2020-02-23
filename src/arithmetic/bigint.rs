@@ -231,6 +231,16 @@ impl<M: PublicModulus> Modulus<M> {
     }
 }
 
+impl<M: PublicModulus> Clone for Modulus<M> {
+    fn clone(&self) -> Self {
+        Self {
+            limbs: self.limbs.clone(),
+            n0: self.n0.clone(),
+            oneRR: self.oneRR.clone(),
+        }
+    }
+}
+
 impl<M: PublicModulus> core::fmt::Debug for Modulus<M> {
     fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> Result<(), ::core::fmt::Error> {
         let mut state = fmt.debug_tuple("Modulus");
@@ -658,6 +668,12 @@ impl<M> One<M, RR> {
             limbs: RR.limbs,
             encoding: PhantomData, // PhantomData<RR>
         })
+    }
+}
+
+impl<M: PublicModulus, E> Clone for One<M, E> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
 
