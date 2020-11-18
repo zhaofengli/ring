@@ -104,7 +104,7 @@ mod polyfill;
 pub mod aead;
 pub mod agreement;
 
-mod bits;
+pub mod bits;
 
 pub(crate) mod c;
 pub mod constant_time;
@@ -124,7 +124,7 @@ pub mod pkcs8;
 pub mod rand;
 
 #[cfg(feature = "alloc")]
-mod rsa;
+pub mod rsa;
 
 pub mod signature;
 
