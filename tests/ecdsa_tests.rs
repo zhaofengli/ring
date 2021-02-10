@@ -18,9 +18,16 @@ use ring::{
     test, test_file,
 };
 
+#[cfg(all(target_arch = "wasm32", feature = "wasm32_c"))]
+use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+
+#[cfg(all(target_arch = "wasm32", feature = "wasm32_c"))]
+wasm_bindgen_test_configure!(run_in_browser);
+
 // ECDSA *signing* tests are in src/ec/ecdsa/signing.rs.
 
 #[test]
+#[cfg_attr(all(target_arch = "wasm32", feature = "wasm32_c"), wasm_bindgen_test)]
 fn ecdsa_from_pkcs8_test() {
     test::run(
         test_file!("ecdsa_from_pkcs8_tests.txt"),
@@ -86,6 +93,7 @@ fn ecdsa_from_pkcs8_test() {
 
 // Verify that, at least, we generate PKCS#8 documents that we can read.
 #[test]
+#[cfg_attr(all(target_arch = "wasm32", feature = "wasm32_c"), wasm_bindgen_test)]
 fn ecdsa_generate_pkcs8_test() {
     let rng = rand::SystemRandom::new();
 
@@ -109,6 +117,7 @@ fn ecdsa_generate_pkcs8_test() {
 }
 
 #[test]
+#[cfg_attr(all(target_arch = "wasm32", feature = "wasm32_c"), wasm_bindgen_test)]
 fn signature_ecdsa_verify_asn1_test() {
     test::run(
         test_file!("ecdsa_verify_asn1_tests.txt"),
@@ -142,6 +151,7 @@ fn signature_ecdsa_verify_asn1_test() {
 }
 
 #[test]
+#[cfg_attr(all(target_arch = "wasm32", feature = "wasm32_c"), wasm_bindgen_test)]
 fn signature_ecdsa_verify_fixed_test() {
     test::run(
         test_file!("ecdsa_verify_fixed_tests.txt"),
@@ -176,6 +186,7 @@ fn signature_ecdsa_verify_fixed_test() {
 }
 
 #[test]
+#[cfg_attr(all(target_arch = "wasm32", feature = "wasm32_c"), wasm_bindgen_test)]
 fn ecdsa_test_public_key_coverage() {
     const PRIVATE_KEY: &[u8] = include_bytes!("ecdsa_test_private_key_p256.p8");
     const PUBLIC_KEY: &[u8] = include_bytes!("ecdsa_test_public_key_p256.der");
@@ -211,6 +222,7 @@ fn ecdsa_test_public_key_coverage() {
 // signature verifies correctly. The known-answer tests themselves are in
 // ecsda/signing.rs.
 #[test]
+#[cfg_attr(all(target_arch = "wasm32", feature = "wasm32_c"), wasm_bindgen_test)]
 fn signature_ecdsa_sign_fixed_sign_and_verify_test() {
     let rng = rand::SystemRandom::new();
 
@@ -265,6 +277,7 @@ fn signature_ecdsa_sign_fixed_sign_and_verify_test() {
 // signature verifies correctly. The known-answer tests themselves are in
 // ecsda/signing.rs.
 #[test]
+#[cfg_attr(all(target_arch = "wasm32", feature = "wasm32_c"), wasm_bindgen_test)]
 fn signature_ecdsa_sign_asn1_test() {
     let rng = rand::SystemRandom::new();
 
