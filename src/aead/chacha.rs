@@ -17,7 +17,7 @@ use super::{quic::Sample, Nonce};
 use crate::polyfill::ChunksFixed;
 
 #[cfg(any(
-    test,
+    all(test, any(not(debug_assertions), feature = "slow_tests")),
     not(any(
         target_arch = "aarch64",
         target_arch = "arm",
@@ -144,7 +144,7 @@ impl Key {
     }
 
     #[cfg(any(
-        test,
+        all(test, any(not(debug_assertions), feature = "slow_tests")),
         not(any(target_arch = "aarch64", target_arch = "arm", target_arch = "x86"))
     ))]
     #[inline]
@@ -181,7 +181,7 @@ impl Counter {
     /// This is "less safe" because it hands off management of the counter to
     /// the caller.
     #[cfg(any(
-        test,
+        all(test, any(not(debug_assertions), feature = "slow_tests")),
         not(any(
             target_arch = "aarch64",
             target_arch = "arm",
@@ -227,33 +227,17 @@ mod tests {
     use core::convert::TryInto;
 
     const MAX_ALIGNMENT_AND_OFFSET: (usize, usize) = (15, 259);
-    const MAX_ALIGNMENT_AND_OFFSET_SUBSET: (usize, usize) =
-        if cfg!(any(debug_assertions = "false", feature = "slow_tests")) {
-            MAX_ALIGNMENT_AND_OFFSET
-        } else {
-            (0, 0)
-        };
 
     #[test]
     fn chacha20_test_default() {
-        // Always use `MAX_OFFSET` if we hav assembly code.
-        let max_offset = if cfg!(any(
-            target_arch = "aarch64",
-            target_arch = "arm",
-            target_arch = "x86",
-            target_arch = "x86_64"
-        )) {
-            MAX_ALIGNMENT_AND_OFFSET
-        } else {
-            MAX_ALIGNMENT_AND_OFFSET_SUBSET
-        };
-        chacha20_test(max_offset, Key::encrypt_within);
+        chacha20_test(MAX_ALIGNMENT_AND_OFFSET, Key::encrypt_within);
     }
 
     // Smoketest the fallback implementation.
+    #[cfg(any(not(debug_assertions), feature = "slow_tests"))]
     #[test]
     fn chacha20_test_fallback() {
-        chacha20_test(MAX_ALIGNMENT_AND_OFFSET_SUBSET, fallback::chacha20_ctr32);
+        chacha20_test(MAX_ALIGNMENT_AND_OFFSET, fallback::chacha20_ctr32);
     }
 
     // Verifies the encryption is successful when done on overlapping buffers.
