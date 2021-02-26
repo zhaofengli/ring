@@ -215,7 +215,7 @@ fn signature_ecdsa_sign_fixed_sign_and_verify_test() {
     let rng = rand::SystemRandom::new();
 
     test::run(
-        test_file!("../src/ec/suite_b/ecdsa/ecdsa_sign_fixed_tests.txt"),
+        test_file!("../../src/ec/suite_b/ecdsa/ecdsa_sign_fixed_tests.txt"),
         |section, test_case| {
             assert_eq!(section, "");
 
@@ -269,7 +269,7 @@ fn signature_ecdsa_sign_asn1_test() {
     let rng = rand::SystemRandom::new();
 
     test::run(
-        test_file!("../src/ec/suite_b/ecdsa/ecdsa_sign_asn1_tests.txt"),
+        test_file!("../../src/ec/suite_b/ecdsa/ecdsa_sign_asn1_tests.txt"),
         |section, test_case| {
             assert_eq!(section, "");
 

@@ -89,7 +89,7 @@ mod digest_shavs {
                     run_known_answer_test(
                         &digest::$algorithm_name,
                         test_file!(concat!(
-                            "../third_party/NIST/SHAVS/",
+                            "../../third_party/NIST/SHAVS/",
                             stringify!($file_name),
                             "ShortMsg.rsp"
                         )),
@@ -102,7 +102,7 @@ mod digest_shavs {
                     run_known_answer_test(
                         &digest::$algorithm_name,
                         test_file!(concat!(
-                            "../third_party/NIST/SHAVS/",
+                            "../../third_party/NIST/SHAVS/",
                             stringify!($file_name),
                             "LongMsg.rsp"
                         )),
@@ -115,7 +115,7 @@ mod digest_shavs {
                     run_monte_carlo_test(
                         &digest::$algorithm_name,
                         test_file!(concat!(
-                            "../third_party/NIST/SHAVS/",
+                            "../../third_party/NIST/SHAVS/",
                             stringify!($file_name),
                             "Monte.rsp"
                         )),
