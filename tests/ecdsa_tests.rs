@@ -12,14 +12,20 @@
 // OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-use ring::{
-    rand,
-    signature::{self, KeyPair},
-    test, test_file,
-};
+use ring::{signature, test, test_file};
+
+#[cfg(not(target_arch = "wasm32"))]
+use ring::{rand, signature::KeyPair};
+
+#[cfg(all(feature = "wasm32_c", target_arch = "wasm32"))]
+use wasm_bindgen_test::{wasm_bindgen_test as test, wasm_bindgen_test_configure};
+
+#[cfg(all(feature = "wasm32_c", target_arch = "wasm32"))]
+wasm_bindgen_test_configure!(run_in_browser);
 
 // ECDSA *signing* tests are in src/ec/ecdsa/signing.rs.
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn ecdsa_from_pkcs8_test() {
     test::run(
@@ -85,6 +91,7 @@ fn ecdsa_from_pkcs8_test() {
 }
 
 // Verify that, at least, we generate PKCS#8 documents that we can read.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn ecdsa_generate_pkcs8_test() {
     let rng = rand::SystemRandom::new();
@@ -175,6 +182,7 @@ fn signature_ecdsa_verify_fixed_test() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn ecdsa_test_public_key_coverage() {
     const PRIVATE_KEY: &[u8] = include_bytes!("ecdsa_test_private_key_p256.p8");
@@ -210,6 +218,7 @@ fn ecdsa_test_public_key_coverage() {
 // different each time. Because of that, here we simply verify that the
 // signature verifies correctly. The known-answer tests themselves are in
 // ecsda/signing.rs.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn signature_ecdsa_sign_fixed_sign_and_verify_test() {
     let rng = rand::SystemRandom::new();
@@ -264,6 +273,7 @@ fn signature_ecdsa_sign_fixed_sign_and_verify_test() {
 // different each time. Because of that, here we simply verify that the
 // signature verifies correctly. The known-answer tests themselves are in
 // ecsda/signing.rs.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn signature_ecdsa_sign_asn1_test() {
     let rng = rand::SystemRandom::new();

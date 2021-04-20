@@ -16,6 +16,12 @@ extern crate alloc;
 
 use ring::{agreement, error, rand, test, test_file};
 
+#[cfg(all(feature = "wasm32_c", target_arch = "wasm32"))]
+use wasm_bindgen_test::{wasm_bindgen_test as test, wasm_bindgen_test_configure};
+
+#[cfg(all(feature = "wasm32_c", target_arch = "wasm32"))]
+wasm_bindgen_test_configure!(run_in_browser);
+
 #[test]
 fn agreement_traits() {
     use alloc::vec::Vec;

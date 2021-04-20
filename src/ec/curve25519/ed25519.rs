@@ -17,7 +17,9 @@
 use super::ops::ELEM_LEN;
 use crate::digest;
 
+#[cfg(not(target_arch = "wasm32"))]
 pub mod signing;
+
 pub mod verification;
 
 /// The length of an Ed25519 public key.

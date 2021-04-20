@@ -258,21 +258,25 @@ use crate::{cpu, ec, error, sealed};
 
 pub use crate::ec::{
     curve25519::ed25519::{
-        signing::Ed25519KeyPair,
         verification::{EdDSAParameters, ED25519},
         ED25519_PUBLIC_KEY_LEN,
     },
-    suite_b::ecdsa::{
-        signing::{
-            EcdsaKeyPair, EcdsaSigningAlgorithm, ECDSA_P256_SHA256_ASN1_SIGNING,
-            ECDSA_P256_SHA256_FIXED_SIGNING, ECDSA_P384_SHA384_ASN1_SIGNING,
-            ECDSA_P384_SHA384_FIXED_SIGNING,
-        },
-        verification::{
-            EcdsaVerificationAlgorithm, ECDSA_P256_SHA256_ASN1, ECDSA_P256_SHA256_FIXED,
-            ECDSA_P256_SHA384_ASN1, ECDSA_P384_SHA256_ASN1, ECDSA_P384_SHA384_ASN1,
-            ECDSA_P384_SHA384_FIXED,
-        },
+    suite_b::ecdsa::verification::{
+        EcdsaVerificationAlgorithm, ECDSA_P256_SHA256_ASN1, ECDSA_P256_SHA256_FIXED,
+        ECDSA_P256_SHA384_ASN1, ECDSA_P384_SHA256_ASN1, ECDSA_P384_SHA384_ASN1,
+        ECDSA_P384_SHA384_FIXED,
+    },
+};
+
+// TODO: Add signing support for WebAssembly after investigating side channel
+// risks.
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::ec::{
+    curve25519::ed25519::signing::Ed25519KeyPair,
+    suite_b::ecdsa::signing::{
+        EcdsaKeyPair, EcdsaSigningAlgorithm, ECDSA_P256_SHA256_ASN1_SIGNING,
+        ECDSA_P256_SHA256_FIXED_SIGNING, ECDSA_P384_SHA384_ASN1_SIGNING,
+        ECDSA_P384_SHA384_FIXED_SIGNING,
     },
 };
 

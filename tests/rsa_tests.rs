@@ -12,6 +12,8 @@
 // OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+#![cfg_attr(target_arch = "wasm32", allow(dead_code))]
+
 #[cfg(feature = "alloc")]
 use ring::{
     error,

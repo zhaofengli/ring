@@ -57,6 +57,7 @@
 // internally.
 #![deny(missing_docs, unused_qualifications, variant_size_differences)]
 #![forbid(unused_results)]
+#![cfg_attr(target_arch = "wasm32", allow(dead_code))]
 #![no_std]
 
 #[cfg(feature = "alloc")]

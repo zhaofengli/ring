@@ -12,13 +12,19 @@
 // OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-use ring::{
-    error,
-    signature::{self, Ed25519KeyPair, KeyPair},
-    test, test_file,
-};
+use ring::{error, signature, test, test_file};
+
+#[cfg(not(target_arch = "wasm32"))]
+use ring::signature::{Ed25519KeyPair, KeyPair};
+
+#[cfg(all(feature = "wasm32_c", target_arch = "wasm32"))]
+use wasm_bindgen_test::{wasm_bindgen_test as test, wasm_bindgen_test_configure};
+
+#[cfg(all(feature = "wasm32_c", target_arch = "wasm32"))]
+wasm_bindgen_test_configure!(run_in_browser);
 
 /// Test vectors from BoringSSL.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test_signature_ed25519() {
     test::run(test_file!("ed25519_tests.txt"), |section, test_case| {
@@ -95,6 +101,7 @@ fn test_signature_verification(
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test_ed25519_from_seed_and_public_key_misuse() {
     const PRIVATE_KEY: &[u8] = include_bytes!("ed25519_test_private_key.bin");
@@ -112,6 +119,7 @@ fn test_ed25519_from_seed_and_public_key_misuse() {
     assert!(Ed25519KeyPair::from_seed_and_public_key(PUBLIC_KEY, PRIVATE_KEY).is_err());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test_ed25519_from_pkcs8_unchecked() {
     // Just test that we can parse the input.
@@ -134,6 +142,7 @@ fn test_ed25519_from_pkcs8_unchecked() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test_ed25519_from_pkcs8() {
     // Just test that we can parse the input.
@@ -156,6 +165,7 @@ fn test_ed25519_from_pkcs8() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn ed25519_test_public_key_coverage() {
     const PRIVATE_KEY: &[u8] = include_bytes!("ed25519_test_private_key.p8");
