@@ -202,7 +202,8 @@ fn test_open_in_place_seperate_tag(
     let nonce = aead::Nonce::assume_unique_for_key(tc.nonce);
     let tag = tc.tag.try_into().unwrap();
 
-    let actual_plaintext = key.open_in_place_seperate_tag(nonce, tc.aad, tag, &mut in_out)?;
+    // TODO: test additional values of `ciphertext`.
+    let actual_plaintext = key.open_in_place_separate_tag(nonce, tc.aad, tag, &mut in_out, 0..)?;
 
     assert_eq!(actual_plaintext, tc.plaintext);
     assert_eq!(&in_out[..tc.plaintext.len()], tc.plaintext);

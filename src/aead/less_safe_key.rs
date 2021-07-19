@@ -44,24 +44,22 @@ impl LessSafeKey {
         })
     }
 
-    /// Like [open_in_place](Self::open_in_place), except it accepts an arbitrary authentication tag.
+    /// Like [open_in_place](Self::open_in_place), except the authentication
+    /// tag is passed separately.
     #[inline]
-    pub fn open_in_place_seperate_tag<'in_out, A>(
+    pub fn open_in_place_separate_tag<'in_out, A>(
         &self,
         nonce: Nonce,
         aad: Aad<A>,
         tag: Tag,
         in_out: &'in_out mut [u8],
+        ciphertext: RangeFrom<usize>,
     ) -> Result<&'in_out mut [u8], error::Unspecified>
     where
         A: AsRef<[u8]>,
     {
-        let received_tag = tag;
         let aad = Aad::from(aad.as_ref());
-
-        let ciphertext_len = in_out.len();
-
-        open_within_(self, nonce, aad, received_tag, in_out, 0.., ciphertext_len)
+        open_within_(self, nonce, aad, tag, in_out, ciphertext)
     }
 
     /// Like [`OpeningKey::open_in_place()`], except it accepts an arbitrary nonce.
@@ -94,28 +92,18 @@ impl LessSafeKey {
     where
         A: AsRef<[u8]>,
     {
-        let ciphertext_and_tag_len = in_out
+        // XXX: There are redundant dynamic checks here. Do they get optimized away?
+        let tag_offset = in_out
             .len()
-            .checked_sub(ciphertext_and_tag.start)
-            .ok_or(error::Unspecified)?;
-
-        let ciphertext_len = ciphertext_and_tag_len
             .checked_sub(TAG_LEN)
             .ok_or(error::Unspecified)?;
 
-        let (in_out, received_tag) = in_out.split_at_mut(ciphertext_and_tag.start + ciphertext_len);
-
+        // Split the tag off the end of `in_out`.
+        let (in_out, received_tag) = in_out.split_at_mut(tag_offset);
         let received_tag = (*received_tag).try_into()?;
+        let ciphertext: RangeFrom<_> = ciphertext_and_tag;
 
-        open_within_(
-            self,
-            nonce,
-            Aad::from(aad.as_ref()),
-            received_tag,
-            in_out,
-            ciphertext_and_tag,
-            ciphertext_len,
-        )
+        self.open_in_place_separate_tag(nonce, aad, received_tag, in_out, ciphertext)
     }
 
     /// Like [`SealingKey::seal_in_place_append_tag()`], except it accepts an
@@ -178,8 +166,8 @@ fn open_within_<'in_out>(
     received_tag: Tag,
     in_out: &'in_out mut [u8],
     src: RangeFrom<usize>,
-    ciphertext_len: usize,
 ) -> Result<&'in_out mut [u8], error::Unspecified> {
+    let ciphertext_len = in_out.get(src.clone()).ok_or(error::Unspecified)?.len();
     check_per_nonce_max_bytes(key.algorithm, ciphertext_len)?;
 
     let Tag(calculated_tag) = (key.algorithm.open)(&key.inner, nonce, aad, in_out, src);
