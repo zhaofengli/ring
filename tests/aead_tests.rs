@@ -68,6 +68,7 @@ macro_rules! test_aead {
                             opening_key_open_within,
                             sealing_key_seal_in_place_append_tag,
                             sealing_key_seal_in_place_separate_tag,
+                            test_open_in_place_seperate_tag,
                         ]);
 
                     #[test]
@@ -184,6 +185,24 @@ where
     in_out.extend_from_slice(tc.tag);
 
     let actual_plaintext = open_in_place(nonce, &mut in_out)?;
+
+    assert_eq!(actual_plaintext, tc.plaintext);
+    assert_eq!(&in_out[..tc.plaintext.len()], tc.plaintext);
+    Ok(())
+}
+
+fn test_open_in_place_seperate_tag(
+    alg: &'static aead::Algorithm,
+    tc: KnownAnswerTestCase,
+) -> Result<(), error::Unspecified> {
+    let key = make_less_safe_key(alg, tc.key);
+
+    let mut in_out = Vec::from(tc.ciphertext);
+
+    let nonce = aead::Nonce::assume_unique_for_key(tc.nonce);
+    let tag = tc.tag.try_into().unwrap();
+
+    let actual_plaintext = key.open_in_place_seperate_tag(nonce, tc.aad, tag, &mut in_out)?;
 
     assert_eq!(actual_plaintext, tc.plaintext);
     assert_eq!(&in_out[..tc.plaintext.len()], tc.plaintext);
