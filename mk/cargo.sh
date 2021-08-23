@@ -115,7 +115,8 @@ if [ -n "${RING_COVERAGE-}" ]; then
   rm -f "$coverage_dir/*.profraw"
 
   export RING_BUILD_EXECUTABLE_LIST="$coverage_dir/executables"
-  truncate --size=0 "$RING_BUILD_EXECUTABLE_LIST"
+  # macOS doesn't have `truncate`.
+  cat /dev/null > "$RING_BUILD_EXECUTABLE_LIST"
 
   # This doesn't work when profiling under QEMU. Instead mk/runner does
   # something similar but different.
@@ -123,7 +124,8 @@ if [ -n "${RING_COVERAGE-}" ]; then
 
   # ${target} with hyphens replaced by underscores, lowercase and uppercase.
   target_lower=${target//-/_}
-  target_upper=${target_lower^^}
+  # macOS's bash doesn't have `${target_lower^^}`
+  target_upper=$(echo "$target_lower" | tr "[a-z]" "[A-Z]")
 
   cflags_var=CFLAGS_${target_lower}
   declare -x "${cflags_var}=-fprofile-instr-generate -fcoverage-mapping ${!cflags_var-}"

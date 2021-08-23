@@ -390,6 +390,7 @@ jobs:
         target:
           - aarch64-unknown-linux-gnu
           - i686-unknown-linux-gnu
+          - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
 
         mode:
@@ -415,6 +416,9 @@ jobs:
           # https://github.com/rust-lang/rust/issues/79555 are fixed.
           - target: i686-unknown-linux-gnu
             host_os: ubuntu-18.04
+
+          - target: x86_64-apple-darwin
+            host_os: macos-latest
 
           - target: x86_64-unknown-linux-musl
             host_os: ubuntu-18.04
