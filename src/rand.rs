@@ -59,9 +59,7 @@ impl<T: RandomlyConstructable> Random<T> {
 
 /// Generate the new random value using `rng`.
 #[inline]
-pub fn generate<T: RandomlyConstructable>(
-    rng: &dyn SecureRandom,
-) -> Result<Random<T>, error::Unspecified>
+pub fn generate<T>(rng: &dyn SecureRandom) -> Result<Random<T>, error::Unspecified>
 where
     T: RandomlyConstructable,
 {

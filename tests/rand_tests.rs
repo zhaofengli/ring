@@ -76,3 +76,26 @@ fn test_system_random_traits() {
         format!("{:?}", rand::SystemRandom::new())
     );
 }
+
+/// Tests that `rand::generate()` works with the given types. Doesn't test that
+/// it gives the correct results.
+#[test]
+fn test_rand_generate_api_visibility() {
+    fn test<const LEN: usize>(rng: &dyn rand::SecureRandom)
+    where
+        [u8; LEN]: rand::RandomlyConstructable,
+    {
+        let _: [u8; LEN] = rand::generate(rng).unwrap().expose();
+    }
+
+    let rng = rand::SystemRandom::new();
+
+    test::<4>(&rng);
+    test::<8>(&rng);
+    test::<16>(&rng);
+    test::<32>(&rng);
+    test::<48>(&rng);
+    test::<64>(&rng);
+    test::<128>(&rng);
+    test::<256>(&rng);
+}
