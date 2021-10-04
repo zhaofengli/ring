@@ -470,7 +470,6 @@ impl<M> Elem<M, Unencoded> {
 
     #[inline]
     pub fn fill_be_bytes(&self, out: &mut [u8]) {
-        // See Falko Strenzke, "Manger's Attack revisited", ICICS 2010.
         limb::big_endian_from_limbs(&self.limbs, out)
     }
 
