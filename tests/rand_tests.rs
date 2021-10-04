@@ -93,9 +93,11 @@ fn test_rand_generate_api_visibility() {
     test::<4>(&rng);
     test::<8>(&rng);
     test::<16>(&rng);
+    test::<28>(&rng);
     test::<32>(&rng);
     test::<48>(&rng);
     test::<64>(&rng);
     test::<128>(&rng);
     test::<256>(&rng);
+    test::<512>(&rng);
 }
